@@ -1,23 +1,21 @@
+# -*- coding: utf-8 -*-
 """
-ASCON-Hash v1.2 Implementation (Big-Endian).
+ASCON-Hash256 Implementation (NIST SP 800-232 Standard).
 
-This module provides a Python implementation of the ASCON-Hash cryptographic
-hash function as specified in the original Ascon v1.2 submission.
-It produces a 256-bit digest and uses big-endian byte order internally.
+This module provides a Python implementation of the ASCON-Hash256 cryptographic
+hash function as specified in the NIST SP 800-232 standard.
+It produces a 256-bit digest and uses little-endian byte order internally.
 
 This module is intended for use as a utility function, for example, within
 a Django application's utils.py.
-
-Note: This implementation differs from the final NIST SP 800-232 standard
-which specifies little-endian byte order and uses different Initialization Vectors.
 """
 
 from typing import List, Tuple, Union
 
-# --- Constants ---
+# --- Constants (NIST SP 800-232 Standard) ---
 
-ASCON_HASH_IV: int = 0x00400c0000000100
-"""Initialization Vector for ASCON-Hash v1.2."""
+ASCON_HASH256_IV: int = 0x00400c0001000100
+"""Initialization Vector for ASCON-Hash256 (NIST SP 800-232)."""
 
 ASCON_HASH_RATE: int = 8
 """Rate in bytes (64 bits) for ASCON-Hash."""
@@ -32,6 +30,7 @@ MASK_64: int = 0xFFFFFFFFFFFFFFFF
 """Mask to ensure 64-bit unsigned integer representation in Python."""
 
 # Precomputed round constants for the ASCON permutation (12 rounds).
+# These constants remain the same for the NIST standard permutation.
 # Derived from the formula: (0xf0 - r*0x10 + r*0x1) for r in 0..11
 ASCON_ROUND_CONSTANTS: Tuple[int, ...] = (
     0xf0, 0xe1, 0xd2, 0xc3, 0xb4, 0xa5,
@@ -42,7 +41,7 @@ ASCON_ROUND_CONSTANTS: Tuple[int, ...] = (
 StateType = List[int]
 
 
-# --- Helper Functions ---
+# --- Helper Functions (Unaffected by IV/Endianness Change) ---
 
 def right_rot(x: int, n: int) -> int:
     """
@@ -63,9 +62,6 @@ def sbox(state: StateType) -> StateType:
     """
     Apply the ASCON substitution layer (S-box) to the state in-place.
 
-    This function implements the 5-bit S-box applied bitwise across the
-    64-bit words of the state.
-
     Args:
         state: The current cipher state (list of 5 ints). Modified in-place.
 
@@ -74,18 +70,16 @@ def sbox(state: StateType) -> StateType:
     """
     x0, x1, x2, x3, x4 = state
 
-    # S-box layer computation using bitwise operations.
     x0 ^= x4
     x4 ^= x3
     x2 ^= x1
-    # Intermediate variables (t) can aid readability of the S-box logic.
-    t0 = x0; t1 = x1; t2 = x2; t3 = x3; t4 = x4
+    t0 = x0; t1 = x1; t2 = x2; t3 = x3; t4 = x4 # Intermediate state
 
     t0 = (~t0) & t1
     t1 = (~t1) & t2
     t2 = (~t2) & t3
     t3 = (~t3) & t4
-    t4 = (~t4) & x0  # Use original x0 for this step
+    t4 = (~t4) & x0
 
     x0 ^= t1
     x1 ^= t2
@@ -96,9 +90,9 @@ def sbox(state: StateType) -> StateType:
     x1 ^= x0
     x0 ^= x4
     x3 ^= x2
-    x2 = ~x2 # Bitwise NOT operation
+    x2 = ~x2
 
-    # Ensure all state words remain within 64-bit bounds after S-box.
+    # Ensure 64-bit bounds using mask
     state[0] = x0 & MASK_64
     state[1] = x1 & MASK_64
     state[2] = x2 & MASK_64
@@ -111,8 +105,6 @@ def linear_layer(state: StateType) -> StateType:
     """
     Apply the ASCON linear diffusion layer to the state in-place.
 
-    This layer provides diffusion by rotating and XORing each state word.
-
     Args:
         state: The current cipher state (list of 5 ints). Modified in-place.
 
@@ -121,19 +113,13 @@ def linear_layer(state: StateType) -> StateType:
     """
     x0, x1, x2, x3, x4 = state
 
-    # Apply linear diffusion sigma functions based on the specification.
-    # Sigma_0: rotations 19, 28
     x0 ^= right_rot(x0, 19) ^ right_rot(x0, 28)
-    # Sigma_1: rotations 61, 39
     x1 ^= right_rot(x1, 61) ^ right_rot(x1, 39)
-    # Sigma_2: rotations 1, 6
     x2 ^= right_rot(x2, 1)  ^ right_rot(x2, 6)
-    # Sigma_3: rotations 10, 17
     x3 ^= right_rot(x3, 10) ^ right_rot(x3, 17)
-    # Sigma_4: rotations 7, 41
     x4 ^= right_rot(x4, 7)  ^ right_rot(x4, 41)
 
-    # Ensure all state words remain within 64-bit bounds after diffusion.
+    # Ensure 64-bit bounds using mask
     state[0] = x0 & MASK_64
     state[1] = x1 & MASK_64
     state[2] = x2 & MASK_64
@@ -148,12 +134,11 @@ def ascon_permutation(state: StateType, rounds: int) -> StateType:
 
     Args:
         state: The current cipher state (list of 5 ints). Modified in-place.
-        rounds: The number of rounds of the permutation to apply (e.g., 12, 8, 6).
+        rounds: The number of rounds of the permutation to apply.
 
     Returns:
         The modified cipher state after applying the permutation rounds.
     """
-    # The rounds are indexed from 12-rounds to 11 for constants lookup.
     start_round = 12 - rounds
     for r in range(start_round, 12):
         # 1. Add round constant (XOR into state[2])
@@ -168,20 +153,20 @@ def ascon_permutation(state: StateType, rounds: int) -> StateType:
     return state
 
 
-# --- Core Hashing Functions ---
+# --- Core Hashing Functions (NIST Standard Version) ---
 
 def initialize_hash() -> StateType:
     """
-    Initialize the ASCON-Hash state.
+    Initialize the ASCON-Hash state according to NIST SP 800-232.
 
-    Sets up the initial 320-bit state using the ASCON-Hash v1.2 IV and applies
-    the initial 'a' rounds of the permutation.
+    Sets up the initial 320-bit state using the official NIST ASCON-Hash256 IV
+    and applies the initial 'a' rounds (12) of the permutation.
 
     Returns:
         The initialized cipher state (list of 5 ints).
     """
-    # State is represented as 5 64-bit integers.
-    initial_state: StateType = [ASCON_HASH_IV, 0, 0, 0, 0]
+    # Initialize state using the NIST standard IV for ASCON-Hash256
+    initial_state: StateType = [ASCON_HASH256_IV, 0, 0, 0, 0]
 
     # Apply the 'a' rounds of permutation for initialization.
     return ascon_permutation(initial_state, ASCON_HASH_PA_ROUNDS)
@@ -189,10 +174,10 @@ def initialize_hash() -> StateType:
 
 def absorb(state: StateType, message: bytes) -> StateType:
     """
-    Absorb the input message into the ASCON state using the sponge construction.
+    Absorb the input message into the ASCON state (NIST standard).
 
     Pads the message, processes it in blocks, and applies the permutation
-    after each block. Modifies the state in-place.
+    after each block using little-endian byte order. Modifies the state in-place.
 
     Args:
         state: The current cipher state (list of 5 ints). Modified in-place.
@@ -201,22 +186,22 @@ def absorb(state: StateType, message: bytes) -> StateType:
     Returns:
         The modified cipher state after absorbing the entire message.
     """
-    # Ensure message data is mutable for padding.
     padded_message = bytearray(message)
 
-    # Calculate padding length: Append 0x80 then zeros until multiple of RATE.
+    # Standard padding: Append 0x80 then zeros until length is multiple of RATE.
     msg_len = len(message)
-    padding_len = ASCON_HASH_RATE - (msg_len % ASCON_HASH_RATE)
+    # Calculate number of padding zero bytes needed (excluding the 0x80)
+    padding_zero_bytes = (ASCON_HASH_RATE - 1 - (msg_len % ASCON_HASH_RATE)) % ASCON_HASH_RATE
     padded_message.append(0x80)  # Append the single '1' bit padding marker.
-    padded_message.extend(bytes(padding_len - 1)) # Append '0' bit padding bytes.
+    padded_message.extend(bytes(padding_zero_bytes)) # Append '0' bit padding bytes.
 
     # Process the padded message in blocks.
     for i in range(0, len(padded_message), ASCON_HASH_RATE):
         block = padded_message[i : i + ASCON_HASH_RATE]
 
         # XOR the message block into the first 'rate' part of the state.
-        # This implementation uses BIG-ENDIAN byte order (Ascon v1.2).
-        block_int = int.from_bytes(block, byteorder='big')
+        # NIST standard uses LITTLE-ENDIAN byte order.
+        block_int = int.from_bytes(block, byteorder='little')
         state[0] ^= block_int
 
         # Apply the 'b' rounds of permutation after processing each block.
@@ -227,7 +212,9 @@ def absorb(state: StateType, message: bytes) -> StateType:
 
 def squeeze(state: StateType) -> bytes:
     """
-    Squeeze the 256-bit (32-byte) hash digest from the final state.
+    Squeeze the 256-bit (32-byte) hash digest from the final state (NIST standard).
+
+    Extracts the required number of bytes using little-endian byte order.
 
     Args:
         state: The final cipher state after absorbing all data.
@@ -236,23 +223,19 @@ def squeeze(state: StateType) -> bytes:
         The 32-byte hash digest.
     """
     digest_len_bytes = 32
-    # Use bytearray for efficient concatenation during extraction.
     digest = bytearray()
 
-    # Ascon-Hash256 requires 32 bytes. The rate is 8 bytes.
-    # Extract 8 bytes from state[0], state[1], state[2], state[3].
-    # The final permutation was already applied in the absorb phase.
+    # The final permutation was applied in the absorb phase.
+    # Extract the first 256 bits (32 bytes) from the state.
     idx = 0
     while len(digest) < digest_len_bytes:
-        # Calculate how many bytes to take in this iteration (max is RATE).
         bytes_to_take = min(ASCON_HASH_RATE, digest_len_bytes - len(digest))
         if bytes_to_take <= 0:
-            # This condition prevents infinite loops if logic were different.
             break
 
         word_value = state[idx] & MASK_64
-        # Convert the state word to bytes using BIG-ENDIAN (Ascon v1.2).
-        word_bytes = word_value.to_bytes(8, byteorder='big')
+        # Convert the state word to bytes using LITTLE-ENDIAN (NIST standard).
+        word_bytes = word_value.to_bytes(8, byteorder='little')
         # Append the required number of bytes from the current word.
         digest.extend(word_bytes[:bytes_to_take])
 
@@ -261,15 +244,14 @@ def squeeze(state: StateType) -> bytes:
     return bytes(digest) # Return immutable bytes object.
 
 
-# --- Main Public Function ---
+# --- Main Public Function (NIST Standard Version) ---
 
 def ascon_hash256(message: bytes) -> bytes:
     """
-    Compute the ASCON-Hash (256-bit digest) of the input message.
+    Compute the ASCON-Hash256 digest according to NIST SP 800-232 standard.
 
-    This function implements the Ascon v1.2 specification using big-endian
-    byte order and the corresponding Initialization Vector. It is the primary
-    interface intended for use by other modules.
+    This function implements the official NIST standard using little-endian
+    byte order and the specified Initialization Vector.
 
     Args:
         message: The message data (bytes) to hash.
@@ -284,11 +266,11 @@ def ascon_hash256(message: bytes) -> bytes:
     if not isinstance(message, bytes):
         raise TypeError("Input message must be bytes.")
 
-    # 2. Initialize state
+    # 2. Initialize state (using NIST IV)
     state: StateType = initialize_hash()
 
-    # 3. Absorb message into state
+    # 3. Absorb message into state (using little-endian)
     state = absorb(state, message)
 
-    # 4. Squeeze the final hash digest from the state
+    # 4. Squeeze the final hash digest from the state (using little-endian)
     return squeeze(state)

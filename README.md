@@ -2,35 +2,37 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) A Python and Django-based web application implementing the ASCON-Hash256 cryptographic hash function. This tool provides a robust and efficient way to generate cryptographic fingerprints for data integrity verification via a user-friendly web interface.
 
+**Note:** This implementation follows the official **NIST SP 800-232 standard for ASCON-Hash256**, utilizing the specified Initialization Vector (IV) and little-endian byte order.
+
 ## Overview
 
-This project provides a web interface for generating ASCON-Hash256 (v1.2) hashes. ASCON is renowned for its performance in resource-constrained environments (Lightweight Cryptography - LWC), offering strong security guarantees with minimal overhead. While many ASCON implementations exist as libraries or command-line tools, **ASCON LWC Hash Citadel** aims to fill a gap by offering a convenient online platform that supports hashing both direct text input and **file uploads (up to 10MB)**, a feature combination not readily found in other available online ASCON calculators as of late April 2025.
+This project provides a web interface for generating ASCON-Hash256 (NIST Standard) hashes. ASCON is renowned for its performance in resource-constrained environments (Lightweight Cryptography - LWC), offering strong security guarantees with minimal overhead. While many ASCON implementations exist as libraries or command-line tools, **ASCON LWC Hash Citadel** aims to fill a gap by offering a convenient online platform that supports hashing both direct text input and **file uploads (up to 10MB)**, a feature combination not readily found in other available online ASCON calculators as of late April 2025.
 
 ## What is ASCON?
 
-ASCON is a family of lightweight cryptographic algorithms designed for security in environments with limited resources, such as IoT devices, embedded systems, and smart cards. It won the NIST Lightweight Cryptography (LWC) competition, highlighting its efficiency and security.
+ASCON is a family of lightweight cryptographic algorithms designed for security in environments with limited resources, such as IoT devices, embedded systems, and smart cards. It won the NIST Lightweight Cryptography (LWC) competition and is standardized in **NIST SP 800-232**, highlighting its efficiency and security.
 
 ASCON utilizes a **sponge construction**:
 1.  **Absorbing:** The algorithm "soaks up" input data (the message to be hashed) into an internal state (a 320-bit structure).
 2.  **Squeezing:** It then "squeezes out" the result – in this case, a fixed-size hash value.
 
-This design allows ASCON to perform various cryptographic tasks using a core permutation function that involves steps like adding constants, non-linear substitutions (S-boxes), and linear diffusion to thoroughly mix the internal state.
+This elegant design allows ASCON to perform various cryptographic tasks using a core permutation function that involves steps like adding constants, non-linear substitutions (S-boxes), and linear diffusion to thoroughly mix the internal state.
 
 
-**This project (ASCON LWC Hash Citadel) focuses specifically on the ASCON *hashing* function (ASCON-Hash256, v1.2) via a web application.**
+**This project (ASCON LWC Hash Citadel) focuses specifically on the ASCON *hashing* function (ASCON-Hash256, NIST Standard) via a web application.**
 
-## How ASCON Hashing Works (ASCON-Hash256 v1.2)
+## How ASCON Hashing Works (ASCON-Hash256 NIST Standard)
 
-ASCON-Hash256 follows the sponge principle:
+ASCON-Hash256 follows the sponge principle according to the NIST standard:
 
-1.  **Initialization:** The internal 320-bit state is initialized with the standard v1.2 value (`0x00400c0000000100`). The initial permutation (`a`=12 rounds) is applied.
-2.  **Absorbing Data:** The input message (from text or file) is padded (append `0x80` and then `0x00` bytes until length is a multiple of the rate). It's processed in blocks (rate = 8 bytes). Each block is XORed into the state (using big-endian conversion), followed by applying the ASCON permutation (`b`=12 rounds).
-3.  **Squeezing Output:** After absorbing all message blocks (including the final permutation in the absorb phase), the final 256-bit (32-byte) hash value is extracted ("squeezed") from the first four words of the state (using big-endian conversion).
+1.  **Initialization:** The internal 320-bit state is initialized with the standard NIST value (`0x00400c0001000100`). The initial permutation (`a`=12 rounds) is applied.
+2.  **Absorbing Data:** The input message (from text or file) is padded (append `0x80` and then `0x00` bytes until length is a multiple of the rate). It's processed in blocks (rate = 8 bytes). Each block is XORed into the state (using **little-endian** conversion), followed by applying the ASCON permutation (`b`=12 rounds).
+3.  **Squeezing Output:** After absorbing all message blocks (including the final permutation in the absorb phase), the final 256-bit (32-byte) hash value is extracted ("squeezed") from the first four words of the state (using **little-endian** conversion).
 
 ## Features
 
-* Implements **ASCON-Hash256 (v1.2 specification)**, producing a 32-byte cryptographic hash.
-* Uses **big-endian** byte order and the corresponding v1.2 Initialization Vector.
+* Implements **ASCON-Hash256 (NIST SP 800-232 standard)**, producing a 32-byte cryptographic hash.
+* Uses **little-endian** byte order and the official NIST Initialization Vector.
 * Provides a user-friendly **web interface** (built with Django) for generating hashes.
 * Accepts both direct **text/string input** and **file uploads**.
 * Handles **file sizes up to 10MB** for hashing.
@@ -51,7 +53,7 @@ Follow these steps to get the Django application running locally:
 
 1.  **Clone the Repository:**
     ```bash
-    git clone https://github.com/dev-loop1/ASCON-LWC-Hash-Citadel.git
+    git clone [https://github.com/dev-loop1/ASCON-LWC-Hash-Citadel.git](https://github.com/dev-loop1/ASCON-LWC-Hash-Citadel.git)
     ```
 
 2.  **Navigate to Project Directory:**
@@ -88,8 +90,8 @@ Follow these steps to get the Django application running locally:
 
 ## References
 
-* **Official ASCON Website & Specification:** [https://ascon.isec.tugraz.at/](https://ascon.isec.tugraz.at/)
-* **NIST Lightweight Cryptography Project (Note: Standard uses different params):** [https://csrc.nist.gov/projects/lightweight-cryptography](https://csrc.nist.gov/projects/lightweight-cryptography)
+* **Official ASCON Website & Specification:** [https://ascon.isec.tugraz.at/](https://ascon.isec.tugraz.at/) (Provides general info and links to standard docs)
+* **NIST Lightweight Cryptography Project:** [https://csrc.nist.gov/projects/lightweight-cryptography](https://csrc.nist.gov/projects/lightweight-cryptography) (Source for the standard)
 * **This Repository:** [https://github.com/dev-loop1/ASCON-LWC-Hash-Citadel](https://github.com/dev-loop1/ASCON-LWC-Hash-Citadel)
 
 ## License
