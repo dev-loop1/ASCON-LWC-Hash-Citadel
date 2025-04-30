@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <!-- Input Tabs -->
+        <div class="card">
+            <div class="card-header">
+                <ul class="nav nav-tabs card-header-tabs" id="inputTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="text-tab" data-bs-toggle="tab" data-bs-target="#text-pane" type="button" role="tab" aria-controls="text-pane" aria-selected="true">
+                            <i class="fas fa-keyboard me-2"></i>Text Input
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="file-tab" data-bs-toggle="tab" data-bs-target="#file-pane" type="button" role="tab" aria-controls="file-pane" aria-selected="false">
+                            <i class="fas fa-file-upload me-2"></i>File Upload
+                        </button>
+                    </li>
+                </ul>
+            </div>
+            <div class="tab-content" id="inputTabsContent">
+                <!-- Text Input Tab -->
+                <div class="tab-pane fade show active" id="text-pane" role="tabpanel" aria-labelledby="text-tab">
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="{{ text_form.text_input.id_for_label }}" class="form-label">Enter text to hash:</label>
+                            {{ text_form.text_input }}
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" name="text_submit" class="btn btn-primary">
+                                <i class="fas fa-hash me-2"></i>Generate Hash
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                
+                <!-- File Upload Tab -->
+                <div class="tab-pane fade" id="file-pane" role="tabpanel" aria-labelledby="file-tab">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="{{ file_form.file_input.id_for_label }}" class="form-label">Select a file to hash:</label>
+                            {{ file_form.file_input }}
+                            <div class="form-text">Maximum file size: 10MB. Files are processed locally and not stored on the server.</div>
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" name="file_submit" class="btn btn-primary">
+                                <i class="fas fa-hash me-2"></i>Generate Hash
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Result Card (shown only when there's a result) -->
+        {% if result %}
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span><i class="fas fa-check-circle me-2"></i>Hash Result</span>
+                    <div class="position-relative">
+                        <button class="btn btn-sm btn-outline-light copy-btn" title="Copy to clipboard">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                        <div class="copy-tooltip">Copied!</div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="result-box mb-3">
+                    <span class="result-text">{{ result }}</span>
+                </div>
+                <div class="hash-info">
+                    <p><strong>Algorithm:</strong> ASCON-Hash256</p>
+                    <p><strong>Input Type:</strong> {{ input_type }}</p>
+                    <p><strong>Input Details:</strong> {{ input_info }}</p>
+                    <p><strong>Hash Length:</strong> 256 bits (64 hexadecimal characters)</p>
+                    <p class="text-muted small mb-0">Hash generated at: {% now "F j, Y, g:i a" %}</p>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- About Card -->
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-info-circle me-2"></i>About ASCON Hash
+            </div>
+            <div class="card-body">
+                <p>ASCON is a lightweight cryptographic algorithm designed for resource-constrained devices. ASCON-Hash256 produces a 256-bit (32-byte) hash digest.</p>
+                <p>Key features:</p>
+                <ul>
+                    <li>Fixed output size: Always 32 bytes (256 bits)</li>
+                    <li>Collision resistant: Extremely difficult to find two inputs with the same hash</li>
+                    <li>One-way function: Cannot be reversed to determine the original input</li>
+                    <li>Deterministic: Same input always produces the same output</li>
+                </ul>
+                <p class="mb-0">ASCON was selected as a winner in the NIST Lightweight Cryptography standardization process.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
