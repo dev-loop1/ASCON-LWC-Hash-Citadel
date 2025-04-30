@@ -53,7 +53,7 @@ Follow these steps to get the Django application running locally:
 
 1.  **Clone the Repository:**
     ```bash
-    git clone [https://github.com/dev-loop1/ASCON-LWC-Hash-Citadel.git](https://github.com/dev-loop1/ASCON-LWC-Hash-Citadel.git)
+    git clone https://github.com/dev-loop1/ASCON-LWC-Hash-Citadel.git
     ```
 
 2.  **Navigate to Project Directory:**
@@ -90,8 +90,8 @@ Follow these steps to get the Django application running locally:
 
 ## References
 
-* **Official ASCON Website & Specification:** [https://ascon.isec.tugraz.at/](https://ascon.isec.tugraz.at/) (Provides general info and links to standard docs)
-* **NIST Lightweight Cryptography Project:** [https://csrc.nist.gov/projects/lightweight-cryptography](https://csrc.nist.gov/projects/lightweight-cryptography) (Source for the standard)
+* **Official ASCON Website & Specification:** [https://ascon.isec.tugraz.at/](https://ascon.isec.tugraz.at/)
+* **NIST Lightweight Cryptography Project:** [https://csrc.nist.gov/projects/lightweight-cryptography](https://csrc.nist.gov/projects/lightweight-cryptography)
 * **This Repository:** [https://github.com/dev-loop1/ASCON-LWC-Hash-Citadel](https://github.com/dev-loop1/ASCON-LWC-Hash-Citadel)
 
 ## License
