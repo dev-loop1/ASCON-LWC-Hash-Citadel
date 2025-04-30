@@ -94,6 +94,13 @@ Follow these steps to get the Django application running locally:
 * **NIST Lightweight Cryptography Project:** [https://csrc.nist.gov/projects/lightweight-cryptography](https://csrc.nist.gov/projects/lightweight-cryptography)
 * **This Repository:** [https://github.com/dev-loop1/ASCON-LWC-Hash-Citadel](https://github.com/dev-loop1/ASCON-LWC-Hash-Citadel)
 
+## Contributors
+| Name 			| Enrollment No.       |
+|-----------------------|----------------------|
+|   Vikas Kumar   	|     22114106         |
+|   Adarsh Dehariya   	|      22114002        |
+
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
