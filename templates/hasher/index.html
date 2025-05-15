@@ -1,105 +1,514 @@
 {% extends 'base.html' %}
+{% load static %}
+
+{% block extra_head %}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .result-box-mac { 
+            background-color: #e9ecef; padding: 10px; border-radius: 6px;
+            font-family: monospace; overflow-wrap: break-word; word-wrap: break-word;
+            word-break: break-all; margin-top: 10px;
+        }
+        .status-success { color: #198754; font-weight: bold; }
+        .status-failure { color: #dc3545; font-weight: bold; }
+        #hashDistChartContainer {
+            max-width: 100%; height: 400px; margin-top: 20px; padding: 10px;
+            border: 1px solid #dee2e6; border-radius: .25rem;
+        }
+        .nav-tabs .nav-link { cursor: pointer; }
+
+        .nav-tabs .nav-link:not(.active) {
+            color: white; /* Make text of non-active tabs white */
+        }
+        
+        pre {
+            background-color: #f8f9fa; padding: 10px; border: 1px solid #dee2e6;
+            border-radius: 4px; white-space: pre-wrap; word-wrap: break-word;
+        }
+        .form-error { color: #dc3545; font-size: 0.875em; }
+    </style>
+{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center">
-    <div class="col-md-8">
-        <!-- Input Tabs -->
+    <div class="col-lg-10 col-md-12">
         <div class="card">
             <div class="card-header">
-                <ul class="nav nav-tabs card-header-tabs" id="inputTabs" role="tablist">
+                <ul class="nav nav-tabs card-header-tabs" id="mainTabs" role="tablist">
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link active" id="text-tab" data-bs-toggle="tab" data-bs-target="#text-pane" type="button" role="tab" aria-controls="text-pane" aria-selected="true">
-                            <i class="fas fa-keyboard me-2"></i>Text Input
+                        <button class="nav-link {% if active_tab == 'text-hash-pane' %}active{% endif %}" id="text-hash-tab" data-bs-toggle="tab" data-bs-target="#text-hash-pane" type="button" role="tab" aria-controls="text-hash-pane" aria-selected="{% if active_tab == 'text-hash-pane' %}true{% else %}false{% endif %}">
+                            <i class="fas fa-keyboard me-2"></i>Text Hash
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="file-tab" data-bs-toggle="tab" data-bs-target="#file-pane" type="button" role="tab" aria-controls="file-pane" aria-selected="false">
-                            <i class="fas fa-file-upload me-2"></i>File Upload
+                        <button class="nav-link {% if active_tab == 'file-hash-pane' %}active{% endif %}" id="file-hash-tab" data-bs-toggle="tab" data-bs-target="#file-hash-pane" type="button" role="tab" aria-controls="file-hash-pane" aria-selected="{% if active_tab == 'file-hash-pane' %}true{% else %}false{% endif %}">
+                            <i class="fas fa-file-upload me-2"></i>File Hash
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link {% if active_tab == 'mac-gen-pane' %}active{% endif %}" id="mac-gen-tab" data-bs-toggle="tab" data-bs-target="#mac-gen-pane" type="button" role="tab" aria-controls="mac-gen-pane" aria-selected="{% if active_tab == 'mac-gen-pane' %}true{% else %}false{% endif %}">
+                            <i class="fas fa-key me-1"></i>MAC Gen (Text)
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link {% if active_tab == 'mac-verify-pane' %}active{% endif %}" id="mac-verify-tab" data-bs-toggle="tab" data-bs-target="#mac-verify-pane" type="button" role="tab" aria-controls="mac-verify-pane" aria-selected="{% if active_tab == 'mac-verify-pane' %}true{% else %}false{% endif %}">
+                            <i class="fas fa-check-double me-1"></i>MAC Verify (Text)
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link {% if active_tab == 'mac-gen-file-pane' %}active{% endif %}" id="mac-gen-file-tab" data-bs-toggle="tab" data-bs-target="#mac-gen-file-pane" type="button" role="tab" aria-controls="mac-gen-file-pane" aria-selected="{% if active_tab == 'mac-gen-file-pane' %}true{% else %}false{% endif %}">
+                            <i class="fas fa-file-medical-alt me-1"></i>MAC Gen (File)
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link {% if active_tab == 'mac-verify-file-pane' %}active{% endif %}" id="mac-verify-file-tab" data-bs-toggle="tab" data-bs-target="#mac-verify-file-pane" type="button" role="tab" aria-controls="mac-verify-file-pane" aria-selected="{% if active_tab == 'mac-verify-file-pane' %}true{% else %}false{% endif %}">
+                            <i class="fas fa-file-signature me-1"></i>MAC Verify (File)
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link {% if active_tab == 'forgery-sim-pane' %}active{% endif %}" id="forgery-sim-tab" data-bs-toggle="tab" data-bs-target="#forgery-sim-pane" type="button" role="tab" aria-controls="forgery-sim-pane" aria-selected="{% if active_tab == 'forgery-sim-pane' %}true{% else %}false{% endif %}">
+                            <i class="fas fa-shield-alt me-2"></i>Forgery Simulation
+                        </button>
+                    </li>
+                     <li class="nav-item" role="presentation">
+                        <button class="nav-link {% if active_tab == 'hash-dist-pane' %}active{% endif %}" id="hash-dist-tab" data-bs-toggle="tab" data-bs-target="#hash-dist-pane" type="button" role="tab" aria-controls="hash-dist-pane" aria-selected="{% if active_tab == 'hash-dist-pane' %}true{% else %}false{% endif %}">
+                            <i class="fas fa-project-diagram me-2"></i>Hash Distribution
                         </button>
                     </li>
                 </ul>
             </div>
-            <div class="tab-content" id="inputTabsContent">
-                <!-- Text Input Tab -->
-                <div class="tab-pane fade show active" id="text-pane" role="tabpanel" aria-labelledby="text-tab">
+            <div class="tab-content p-3" id="mainTabsContent">
+                {# Hidden field to track active tab for POST submissions - GENERAL, not per form #}
+                {# This will be updated by JS on tab click and ideally submitted with each form #}
+                {# Each form will also have its own active_tab_on_submit hidden field #}
+
+                <div class="tab-pane fade {% if active_tab == 'text-hash-pane' %}show active{% endif %}" id="text-hash-pane" role="tabpanel" aria-labelledby="text-hash-tab">
                     <form method="post">
                         {% csrf_token %}
+                        <input type="hidden" name="action" value="text_submit">
+                        <input type="hidden" name="active_tab_on_submit" value="text-hash-pane"> {# Specific for this form's submission context #}
                         <div class="mb-3">
-                            <label for="{{ text_form.text_input.id_for_label }}" class="form-label">Enter text to hash:</label>
+                            <label for="{{ text_form.text_input.id_for_label }}" class="form-label">{{ text_form.text_input.label }}:</label>
                             {{ text_form.text_input }}
+                            {% for error in text_form.text_input.errors %}<div class="form-error small mt-1">{{ error }}</div>{% endfor %}
                         </div>
                         <div class="d-grid">
-                            <button type="submit" name="text_submit" class="btn btn-primary">
-                                <i class="fas fa-hash me-2"></i>Generate Hash
-                            </button>
+                            <button type="submit" class="btn btn-primary"><i class="fas fa-bolt me-2"></i>Generate Hash</button>
                         </div>
                     </form>
                 </div>
                 
-                <!-- File Upload Tab -->
-                <div class="tab-pane fade" id="file-pane" role="tabpanel" aria-labelledby="file-tab">
+                <div class="tab-pane fade {% if active_tab == 'file-hash-pane' %}show active{% endif %}" id="file-hash-pane" role="tabpanel" aria-labelledby="file-hash-tab">
                     <form method="post" enctype="multipart/form-data">
                         {% csrf_token %}
+                        <input type="hidden" name="action" value="file_submit">
+                        <input type="hidden" name="active_tab_on_submit" value="file-hash-pane">
                         <div class="mb-3">
-                            <label for="{{ file_form.file_input.id_for_label }}" class="form-label">Select a file to hash:</label>
+                            <label for="{{ file_form.file_input.id_for_label }}" class="form-label">{{ file_form.file_input.label }}:</label>
                             {{ file_form.file_input }}
-                            <div class="form-text">Maximum file size: 10MB. Files are processed locally and not stored on the server.</div>
+                            {% for error in file_form.file_input.errors %}<div class="form-error small mt-1">{{ error }}</div>{% endfor %}
+                            <div class="form-text">Maximum file size: 10MB.</div>
                         </div>
                         <div class="d-grid">
-                            <button type="submit" name="file_submit" class="btn btn-primary">
-                                <i class="fas fa-hash me-2"></i>Generate Hash
-                            </button>
+                            <button type="submit" class="btn btn-primary"><i class="fas fa-bolt me-2"></i>Generate Hash</button>
                         </div>
                     </form>
                 </div>
+
+                <div class="tab-pane fade {% if active_tab == 'mac-gen-pane' %}show active{% endif %}" id="mac-gen-pane" role="tabpanel" aria-labelledby="mac-gen-tab">
+                    <form method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="mac_generate_submit">
+                        <input type="hidden" name="active_tab_on_submit" value="mac-gen-pane">
+                        <div class="mb-3">
+                            {{ mac_form.key.label_tag }} {{ mac_form.key }}
+                            {% for error in mac_form.key.errors %}<div class="form-error small mt-1">{{ error }}</div>{% endfor %}
+                        </div>
+                        <div class="mb-3">
+                            {{ mac_form.message.label_tag }} {{ mac_form.message }}
+                            {% for error in mac_form.message.errors %}<div class="form-error small mt-1">{{ error }}</div>{% endfor %}
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-success"><i class="fas fa-tag me-2"></i>Generate MAC Tag</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="tab-pane fade {% if active_tab == 'mac-verify-pane' %}show active{% endif %}" id="mac-verify-pane" role="tabpanel" aria-labelledby="mac-verify-tab">
+                    <form method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="mac_verify_submit">
+                        <input type="hidden" name="active_tab_on_submit" value="mac-verify-pane">
+                        <div class="mb-3">
+                             {{ mac_verify_form.key.label_tag }} {{ mac_verify_form.key }}
+                             {% for error in mac_verify_form.key.errors %}<div class="form-error small mt-1">{{ error }}</div>{% endfor %}
+                        </div>
+                        <div class="mb-3">
+                             {{ mac_verify_form.message.label_tag }} {{ mac_verify_form.message }}
+                             {% for error in mac_verify_form.message.errors %}<div class="form-error small mt-1">{{ error }}</div>{% endfor %}
+                        </div>
+                         <div class="mb-3">
+                             {{ mac_verify_form.tag.label_tag }} {{ mac_verify_form.tag }}
+                             {% for error in mac_verify_form.tag.errors %}<div class="form-error small mt-1">{{ error }}</div>{% endfor %}
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-info"><i class="fas fa-user-check me-2"></i>Verify MAC Tag</button>
+                        </div>
+                    </form>
+                </div>
+                
+                <div class="tab-pane fade {% if active_tab == 'mac-gen-file-pane' %}show active{% endif %}" id="mac-gen-file-pane" role="tabpanel" aria-labelledby="mac-gen-file-tab">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="mac_generate_file_submit">
+                        <input type="hidden" name="active_tab_on_submit" value="mac-gen-file-pane">
+                        <div class="mb-3">
+                            {{ mac_file_form.key.label_tag }} {{ mac_file_form.key }}
+                            {% for error in mac_file_form.key.errors %}<div class="form-error small mt-1">{{ error }}</div>{% endfor %}
+                        </div>
+                        <div class="mb-3">
+                            {{ mac_file_form.message_file.label_tag }} {{ mac_file_form.message_file }}
+                            {% for error in mac_file_form.message_file.errors %}<div class="form-error small mt-1">{{ error }}</div>{% endfor %}
+                            <div class="form-text">Maximum file size: 10MB.</div>
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-success"><i class="fas fa-tag me-2"></i>Generate MAC Tag from File</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="tab-pane fade {% if active_tab == 'mac-verify-file-pane' %}show active{% endif %}" id="mac-verify-file-pane" role="tabpanel" aria-labelledby="mac-verify-file-tab">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="mac_verify_file_submit">
+                        <input type="hidden" name="active_tab_on_submit" value="mac-verify-file-pane">
+                        <div class="mb-3">
+                             {{ mac_verify_file_form.key.label_tag }} {{ mac_verify_file_form.key }}
+                             {% for error in mac_verify_file_form.key.errors %}<div class="form-error small mt-1">{{ error }}</div>{% endfor %}
+                        </div>
+                        <div class="mb-3">
+                             {{ mac_verify_file_form.message_file.label_tag }} {{ mac_verify_file_form.message_file }}
+                             {% for error in mac_verify_file_form.message_file.errors %}<div class="form-error small mt-1">{{ error }}</div>{% endfor %}
+                             <div class="form-text">Maximum file size: 10MB.</div>
+                        </div>
+                         <div class="mb-3">
+                             {{ mac_verify_file_form.tag.label_tag }} {{ mac_verify_file_form.tag }}
+                             {% for error in mac_verify_file_form.tag.errors %}<div class="form-error small mt-1">{{ error }}</div>{% endfor %}
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-info"><i class="fas fa-user-check me-2"></i>Verify MAC Tag for File</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="tab-pane fade {% if active_tab == 'forgery-sim-pane' %}show active{% endif %}" id="forgery-sim-pane" role="tabpanel" aria-labelledby="forgery-sim-tab">
+                    <p>This simulates how an ASCON-MAC tag protects message integrity (for text messages).
+                        <br>1. Go to the "MAC Gen (Text)" tab, enter a key and message, and generate a tag.
+                        <br>2. The original data will auto-fill below.
+                        <br>3. Modify the "Message (edit to simulate tampering)" field and click "Verify Tampered Message".
+                    </p>
+                    
+                    {% if forgery_key_hex %}
+                    <div class="card my-3">
+                        <div class="card-header bg-secondary text-white">Original Data (Auto-filled from Text MAC Generation)</div>
+                        <div class="card-body">
+                            <p class="mb-1"><strong>Original Message:</strong></p>
+                            <pre>{{ forgery_original_message|default:"(N/A)" }}</pre>
+                            <p class="mb-1 mt-2"><strong>Key (hex):</strong></p>
+                            <div class="result-box-mac d-flex justify-content-between align-items-center">
+                                <span>{{ forgery_key_hex|default:"(N/A)" }}</span>
+                                <button type="button" class="btn btn-sm btn-outline-secondary copy-btn ms-2" title="Copy Key"><i class="fas fa-copy"></i></button>
+                            </div>
+                            <p class="mb-1 mt-2"><strong>Original MAC Tag (hex):</strong></p>
+                            <div class="result-box-mac d-flex justify-content-between align-items-center">
+                                <span>{{ forgery_original_tag_hex|default:"(N/A)" }}</span>
+                                 <button type="button" class="btn btn-sm btn-outline-secondary copy-btn ms-2" title="Copy Tag"><i class="fas fa-copy"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="tamper_verify_submit">
+                        <input type="hidden" name="active_tab_on_submit" value="forgery-sim-pane">
+                        
+                        <input type="hidden" name="{{ tamper_form.original_message.html_name }}" value="{{ forgery_original_message|default:''|escape }}">
+                        <input type="hidden" name="{{ tamper_form.original_key.html_name }}" value="{{ forgery_key_hex|default:''|escape }}">
+                        <input type="hidden" name="{{ tamper_form.original_tag.html_name }}" value="{{ forgery_original_tag_hex|default:''|escape }}">
+                        
+                        <div class="mb-3">
+                            <label for="{{ tamper_form.tampered_message.id_for_label }}">{{ tamper_form.tampered_message.label }}:</label>
+                            {{ tamper_form.tampered_message }} {# Value set by 'initial' in view if available #}
+                            {% for error in tamper_form.tampered_message.errors %}<div class="form-error small mt-1">{{ error }}</div>{% endfor %}
+                        </div>
+                        <button type="submit" class="btn btn-warning"><i class="fas fa-user-secret me-2"></i>Verify Tampered Message</button>
+                    </form>
+                    {% else %}
+                         <p class="text-muted mt-3">Please generate a MAC tag from a <strong>text message</strong> first in the "MAC Gen (Text)" tab to auto-fill data and use this simulation.</p>
+                    {% endif %}
+
+                    {% if forgery_verification_status and active_tab == 'forgery-sim-pane' %}
+                    <div class="mt-3">
+                        <h5>Forgery Simulation Result:</h5>
+                        <p class="{% if 'SUCCESS' in forgery_verification_status %}status-success{% else %}status-failure{% endif %}">
+                            {{ forgery_verification_status }}
+                        </p>
+                        {% if forgery_tampered_message and forgery_original_message != forgery_tampered_message and 'FAILURE' in forgery_verification_status %}
+                            <p class="small text-muted">The message was altered, and the tag verification failed as expected.</p>
+                        {% elif forgery_tampered_message and forgery_original_message == forgery_tampered_message and 'SUCCESS' in forgery_verification_status %}
+                             <p class="small text-muted">The message was not altered, and the tag verification succeeded as expected.</p>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <div class="tab-pane fade {% if active_tab == 'hash-dist-pane' %}show active{% endif %}" id="hash-dist-pane" role="tabpanel" aria-labelledby="hash-dist-tab">
+                    <form method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="hash_dist_submit">
+                        <input type="hidden" name="active_tab_on_submit" value="hash-dist-pane">
+                        <div class="mb-3">
+                            {{ hash_dist_form.base_string.label_tag }} {{ hash_dist_form.base_string }}
+                            {% for error in hash_dist_form.base_string.errors %}<div class="form-error small mt-1">{{ error }}</div>{% endfor %}
+                        </div>
+                        <div class="mb-3">
+                            {{ hash_dist_form.num_hashes.label_tag }} {{ hash_dist_form.num_hashes }}
+                            {% for error in hash_dist_form.num_hashes.errors %}<div class="form-error small mt-1">{{ error }}</div>{% endfor %}
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-secondary"><i class="fas fa-chart-bar me-2"></i>Generate and Plot Distribution</button>
+                        </div>
+                    </form>
+                    <div id="hashDistChartContainer" class="mt-3">
+                        <canvas id="hashDistChart"></canvas>
+                    </div>
+                     <p class="small text-muted mt-2">This visualization plots pairs of 2-byte integers derived from the first 4 bytes of ASCON-Hash256 outputs for slight variations of the base string. It aims to give a simplified visual sense of hash distribution.</p>
+                </div>
+
+            </div> </div> {# CORRECTED if condition below #}
+        {% if mac_tag_generated or mac_verification_status %}
+            {% if active_tab == 'mac-gen-pane' or active_tab == 'mac-verify-pane' or active_tab == 'mac-gen-file-pane' or active_tab == 'mac-verify-file-pane' %}
+            <div class="card mt-4">
+                <div class="card-header {% if mac_verification_status and 'FAILURE' in mac_verification_status %}bg-danger{% elif mac_verification_status and 'SUCCESS' in mac_verification_status %}bg-success{% else %}bg-info{% endif %} text-white">
+                    <i class="fas fa-cogs me-2"></i>MAC Operation Result
+                </div>
+                <div class="card-body">
+                    {% if mac_input_type %}
+                        <p class="mb-1"><strong>Input Type:</strong> {{ mac_input_type }}</p>
+                    {% endif %}
+                    {% if mac_input_info %}
+                        <p class="mb-1"><strong>Input Details:</strong> {{ mac_input_info }}</p>
+                    {% endif %}
+
+                    {% if mac_tag_generated %}
+                    <h5 class="mt-2">Generated MAC Tag:</h5>
+                    <div class="result-box-mac d-flex justify-content-between align-items-center">
+                        <span>{{ mac_tag_generated }}</span>
+                        <button type="button" class="btn btn-sm btn-outline-secondary copy-btn ms-2" title="Copy Tag"><i class="fas fa-copy"></i></button>
+                    </div>
+                    {% endif %}
+
+                    {% if mac_verification_status %}
+                    <h5 class="mt-3">Verification Result:</h5>
+                    <p class="{% if 'SUCCESS' in mac_verification_status %}status-success{% else %}status-failure{% endif %}">
+                        {{ mac_verification_status }}
+                    </p>
+                    {% endif %}
+                </div>
             </div>
-        </div>
-        
-        <!-- Result Card (shown only when there's a result) -->
+            {% endif %}
+        {% endif %}
+
+
+        {# CORRECTED if condition below #}
         {% if result %}
-        <div class="card">
-            <div class="card-header">
-                <div class="d-flex justify-content-between align-items-center">
-                    <span><i class="fas fa-check-circle me-2"></i>Hash Result</span>
-                    <div class="position-relative">
-                        <button class="btn btn-sm btn-outline-light copy-btn" title="Copy to clipboard">
-                            <i class="fas fa-copy"></i>
-                        </button>
-                        <div class="copy-tooltip">Copied!</div>
+            {% if active_tab == 'text-hash-pane' or active_tab == 'file-hash-pane' %}
+            <div class="card mt-4">
+                <div class="card-header bg-primary text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span><i class="fas fa-check-circle me-2"></i>Hash Result</span>
+                        <button type="button" class="btn btn-sm btn-outline-light copy-btn" title="Copy Hash"><i class="fas fa-copy"></i></button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="result-box mb-3">
+                        <span class="result-text">{{ result }}</span>
+                    </div>
+                    <div class="hash-info">
+                        <p class="mb-1"><strong>Algorithm:</strong> ASCON-Hash256</p>
+                        <p class="mb-1"><strong>Input Type:</strong> {{ input_type }}</p>
+                        <p class="mb-1"><strong>Input Details:</strong> {{ input_info }}</p>
+                        <p class="mb-0"><strong>Hash Length:</strong> 256 bits (64 hexadecimal characters)</p>
                     </div>
                 </div>
             </div>
-            <div class="card-body">
-                <div class="result-box mb-3">
-                    <span class="result-text">{{ result }}</span>
-                </div>
-                <div class="hash-info">
-                    <p><strong>Algorithm:</strong> ASCON-Hash256</p>
-                    <p><strong>Input Type:</strong> {{ input_type }}</p>
-                    <p><strong>Input Details:</strong> {{ input_info }}</p>
-                    <p><strong>Hash Length:</strong> 256 bits (64 hexadecimal characters)</p>
-                </div>
-            </div>
-        </div>
+            {% endif %}
         {% endif %}
         
-        <!-- About Card -->
-        <div class="card">
+        <div class="card mt-4">
             <div class="card-header">
-                <i class="fas fa-info-circle me-2"></i>About ASCON Hash
+                <i class="fas fa-info-circle me-2"></i>About ASCON
             </div>
             <div class="card-body">
-                <p>ASCON is a lightweight cryptographic algorithm designed for resource-constrained devices. ASCON-Hash256 produces a 256-bit (32-byte) hash digest.</p>
-                <p>Key features:</p>
-                <ul>
-                    <li>Fixed output size: Always 32 bytes (256 bits)</li>
-                    <li>Collision resistant: Extremely difficult to find two inputs with the same hash</li>
-                    <li>One-way function: Cannot be reversed to determine the original input</li>
-                    <li>Deterministic: Same input always produces the same output</li>
-                </ul>
-                <p class="mb-0">ASCON was selected as a winner in the NIST Lightweight Cryptography standardization process.</p>
+                <p>ASCON is a family of lightweight cryptographic algorithms. This tool demonstrates ASCON-Hash256 (a NIST standard) and ASCON-MAC.</p>
+                <p><strong>ASCON-Hash256:</strong> Produces a 256-bit (32-byte) hash digest. It's designed to be one-way, collision-resistant, and deterministic.</p>
+                <p><strong>ASCON-MAC:</strong> Generates a Message Authentication Code (a short tag) using a secret key. This tag can be used to verify both the integrity (the message hasn't changed) and authenticity (the message originated from someone holding the secret key) of a message.</p>
+                <p class="mb-0">ASCON was selected as the primary choice for lightweight authenticated encryption and hashing in the NIST Lightweight Cryptography (LWC) standardization process.</p>
             </div>
         </div>
     </div>
 </div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+{{ hash_dist_data_points|json_script:"hash-dist-data-json" }}
+
+<script>
+    let globalChartInstance = null;
+
+    function showCopyTooltip(buttonElement) {
+        const originalHTML = buttonElement.innerHTML;
+        buttonElement.innerHTML = '<i class="fas fa-check"></i> Copied!';
+        buttonElement.disabled = true;
+        setTimeout(() => {
+            buttonElement.innerHTML = originalHTML;
+            buttonElement.disabled = false;
+        }, 1500);
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        // Update hidden field with active tab ID when a tab is shown
+        const mainTabsElement = document.getElementById('mainTabs');
+        if (mainTabsElement) {
+            const tabButtons = mainTabsElement.querySelectorAll('button[data-bs-toggle="tab"]');
+            tabButtons.forEach(button => {
+                button.addEventListener('shown.bs.tab', function (event) {
+                    const activeTabPaneId = event.target.getAttribute('aria-controls');
+                    // Update hidden field in ALL forms that have it
+                    document.querySelectorAll('input[name="active_tab_on_submit"]').forEach(field => {
+                        field.value = activeTabPaneId;
+                    });
+                });
+            });
+            // Set initial value for hidden fields on page load based on current active tab passed from view
+            const initialActiveTabFromView = "{{ active_tab|escapejs }}";
+            if(initialActiveTabFromView){
+                document.querySelectorAll('input[name="active_tab_on_submit"]').forEach(field => {
+                    field.value = initialActiveTabFromView;
+                });
+            }
+        }
+        
+        const copyButtons = document.querySelectorAll('.copy-btn');
+        copyButtons.forEach(btn => {
+            btn.addEventListener('click', function(event) {
+                event.preventDefault(); 
+                let textToCopy = null;
+                
+                const directSiblingSpan = this.previousElementSibling;
+                if (directSiblingSpan && directSiblingSpan.tagName === 'SPAN') {
+                    textToCopy = directSiblingSpan.textContent.trim();
+                } else {
+                    const cardHeader = this.closest('.card-header');
+                    if (cardHeader) {
+                        const cardBody = cardHeader.nextElementSibling;
+                        if (cardBody && cardBody.classList.contains('card-body')) {
+                           const resultTextElem = cardBody.querySelector('.result-text');
+                           if(resultTextElem) textToCopy = resultTextElem.textContent.trim();
+                        }
+                    }
+                }
+                
+                if (textToCopy) {
+                    navigator.clipboard.writeText(textToCopy).then(() => {
+                        showCopyTooltip(this);
+                    }).catch(err => {
+                        console.error('Could not copy text: ', err);
+                        alert('Failed to copy text.');
+                    });
+                } else {
+                    console.warn('Could not find text to copy for button:', this);
+                }
+            });
+        });
+
+        const alertElements = document.querySelectorAll('.alert-dismissible');
+        alertElements.forEach(function(alertElement) {
+            setTimeout(function() {
+                const alertInstance = bootstrap.Alert.getOrCreateInstance(alertElement);
+                if (alertInstance) {
+                    alertInstance.close();
+                }
+            }, 7000);
+        });
+        
+        let parsedHashDistDataPoints = [];
+        try {
+            const hashDistDataElement = document.getElementById('hash-dist-data-json');
+            if (hashDistDataElement && hashDistDataElement.textContent) {
+                // Ensure the textContent is not empty before parsing
+                const jsonData = hashDistDataElement.textContent.trim();
+                if (jsonData) {
+                    parsedHashDistDataPoints = JSON.parse(jsonData);
+                }
+            }
+        } catch (e) {
+            console.error("Error parsing hash distribution data:", e);
+        }
+
+        const chartCanvas = document.getElementById('hashDistChart');
+        const currentActiveTabId = "{{ active_tab|escapejs }}";
+
+        function renderChart() {
+            if (!chartCanvas) return;
+            const ctx = chartCanvas.getContext('2d');
+            if (globalChartInstance) {
+                globalChartInstance.destroy(); 
+                globalChartInstance = null;
+            }
+            if (parsedHashDistDataPoints && parsedHashDistDataPoints.length > 0) {
+                globalChartInstance = new Chart(ctx, {
+                    type: 'scatter',
+                    data: {
+                        datasets: [{
+                            label: 'Hash Vals (X:bytes 0-1, Y:bytes 2-3)',
+                            data: parsedHashDistDataPoints,
+                            backgroundColor: 'rgba(0, 123, 255, 0.5)',
+                            borderColor: 'rgba(0, 123, 255, 1)',
+                            pointRadius: 4, pointHoverRadius: 6
+                        }]
+                    },
+                    options: { 
+                        responsive: true, maintainAspectRatio: false,
+                        scales: {
+                            x: { type: 'linear', position: 'bottom', title: { display: true, text: 'Value from Hash Bytes 0-1' }, grid: { color: 'rgba(0,0,0,0.05)' } },
+                            y: { title: { display: true, text: 'Value from Hash Bytes 2-3' }, grid: { color: 'rgba(0,0,0,0.05)' } }
+                        },
+                        plugins: {
+                            legend: { display: true, position: 'top' },
+                            tooltip: { enabled: true, mode: 'nearest', intersect: false, callbacks: { label: function(context) { return `(X: ${context.parsed.x}, Y: ${context.parsed.y})`; } } }
+                        }
+                    }
+                });
+            } else {
+                ctx.clearRect(0, 0, chartCanvas.width, chartCanvas.height); 
+                const hashDistPane = document.getElementById('hash-dist-pane');
+                if (hashDistPane && hashDistPane.classList.contains('active')) { // Only show if tab is active
+                    ctx.font = "16px Arial"; ctx.fillStyle = "#6c757d"; ctx.textAlign = "center";
+                    ctx.fillText("Generate data to display distribution plot.", chartCanvas.width/2, chartCanvas.height/2);
+                }
+            }
+        }
+
+        if (currentActiveTabId === 'hash-dist-pane') {
+            renderChart();
+        }
+
+        const hashDistTabEl = document.getElementById('hash-dist-tab');
+        if (hashDistTabEl) {
+            hashDistTabEl.addEventListener('shown.bs.tab', renderChart);
+        }
+    });
+</script>
 {% endblock %}
