@@ -12,7 +12,6 @@ def index(request):
     action = request.POST.get('action') if request.method == 'POST' else None
 
     text_form_instance = TextHashForm(request.POST if action == 'text_submit' else None)
-    # ... (other form instantiations remain the same as the last full version) ...
     file_form_instance = FileHashForm(request.POST if action == 'file_submit' else None, 
                                       request.FILES if action == 'file_submit' else None)
     mac_form_instance = MacForm(request.POST if action == 'mac_generate_submit' else None)

@@ -1,4 +1,4 @@
-from django import forms
+from django import forms # type: ignore
 
 class TextHashForm(forms.Form):
     text_input = forms.CharField(
